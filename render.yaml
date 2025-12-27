@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: polyhouse-backend
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn backend.app:app"
+    envVars:
+      - key: MONGO_URI
+        value: "mongodb+srv://polyhouse:12345@cluster0.alfrvs9.mongodb.net/?appName=Cluster0"
