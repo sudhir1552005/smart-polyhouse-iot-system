@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Temperature Data Visualization</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="visualisation.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h2>📊 Temperature Data Visualization</h2>
+  </header>
+
+  <main class="container">
+    <div class="chart-container">
+      <h3>🌡️ Water Temperature (°C) Over Time</h3>
+      <canvas id="tempChart"></canvas>
+    </div>
+
+    <div class="back-btn">
+      <button onclick="window.location.href='viewdata.html'">⬅️ Back to Live Data</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Centurion University | IoT Polyhouse Temperature Monitoring</p>
+  </footer>
+
+  <script>
+const API_ROOT =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8080/sensors"
+    : "https://polyhouse-qqiy.onrender.com/sensors";
+
+
+    async function loadData() {
+      try {
+        const res = await fetch(`${API_ROOT}/data`);
+        if (!res.ok) throw new Error("Failed to load data");
+        return await res.json();
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    }
+
+    function drawTemperatureChart(data) {
+      const labels = data.map(d => d.timestamp);
+      const temps = data.map(d => d.waterTemperature);
+
+      new Chart(document.getElementById("tempChart"), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Water Temperature (°C)',
+            data: temps,
+            borderColor: '#f57c00',
+            backgroundColor: 'rgba(245,124,0,0.2)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true },
+            tooltip: { enabled: true }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Time' } },
+            y: { title: { display: true, text: 'Temperature (°C)' } }
+          }
+        }
+      });
+    }
+
+    (async () => {
+      const data = await loadData();
+      drawTemperatureChart(data);
+    })();
+  </script>
+</body>
+</html>

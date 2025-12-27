@@ -1,0 +1,371 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-green: #059669;
+  --dark-green: #047857;
+  --light-green: #d1fae5;
+  --accent-red: #ef4444;
+  --accent-blue: #3b82f6;
+  --accent-yellow: #f59e0b;
+  --text-dark: #1f2937;
+  --text-light: #6b7280;
+  --bg-light: #f0fdf4;
+  --card-bg: #ffffff;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+  --border-radius: 16px;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, var(--bg-light) 0%, #ffffff 100%);
+  color: var(--text-dark);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* Header Styles */
+header {
+  background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  box-shadow: var(--shadow-lg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+header h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+header button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+header button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Container */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Sensor Grid */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* Sensor Card Base */
+.sensor-card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border-left: 5px solid transparent;
+}
+
+.sensor-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(5, 150, 105, 0.03) 100%);
+  pointer-events: none;
+}
+
+.sensor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Temperature Sensor Card */
+.sensor-card[data-sensor="relay1"] {
+  border-left-color: var(--accent-red);
+}
+
+.sensor-card[data-sensor="relay1"] h2 {
+  color: var(--accent-red);
+}
+
+/* Cooling Fan Card */
+.sensor-card[data-sensor="relay2"] {
+  border-left-color: var(--accent-blue);
+}
+
+.sensor-card[data-sensor="relay2"] h2 {
+  color: var(--accent-blue);
+}
+
+/* Grow Light Card */
+.sensor-card[data-sensor="relay3"] {
+  border-left-color: var(--accent-yellow);
+}
+
+.sensor-card[data-sensor="relay3"] h2 {
+  color: var(--accent-yellow);
+}
+
+/* Card Headers */
+.sensor-card h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Temperature Display */
+.temp-display {
+  font-size: 3rem;
+  font-weight: 600;
+  color: var(--primary-green);
+  margin: 1rem 0;
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, var(--light-green) 0%, rgba(209, 250, 229, 0.3) 100%);
+  border-radius: 12px;
+  letter-spacing: -1px;
+}
+
+/* Status Text */
+.sensor-card p {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  background: #f3f4f6;
+}
+
+/* Button Group */
+.btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-group button {
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-group button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-group button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.on-btn {
+  background: linear-gradient(135deg, #10b981 0%, var(--primary-green) 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.on-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
+.off-btn {
+  background: linear-gradient(135deg, #f87171 0%, var(--accent-red) 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.off-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Active States */
+.sensor-card.on {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 50%, var(--card-bg) 100%);
+  border-left-width: 5px;
+  border-left-color: #10b981 !important;
+}
+
+.sensor-card.off {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 50%, var(--card-bg) 100%);
+  border-left-width: 5px;
+  border-left-color: var(--accent-red) !important;
+}
+
+/* Timestamp */
+.sensor-card p:last-child {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Footer */
+footer {
+  background: var(--dark-green);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  margin-top: 4rem;
+  font-size: 0.95rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  header {
+    padding: 1rem;
+    text-align: center;
+    justify-content: center;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  header button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .container {
+    padding: 1rem 0.5rem;
+  }
+
+  .sensor-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .sensor-card {
+    padding: 1.5rem;
+  }
+
+  .temp-display {
+    font-size: 2.5rem;
+  }
+
+  .btn-group {
+    gap: 0.75rem;
+  }
+
+  .btn-group button {
+    padding: 0.875rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sensor-card h2 {
+    font-size: 1.25rem;
+  }
+
+  .temp-display {
+    font-size: 2rem;
+    padding: 0.75rem;
+  }
+
+  .sensor-card p {
+    font-size: 1rem;
+  }
+}
+
+/* Loading Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.sensor-card.loading {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth Transitions */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+button, .sensor-card {
+  transition: all 0.3s ease;
+}

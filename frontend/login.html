@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Polyhouse Monitoring</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <h2>Polyhouse Login</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+    <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+    <p id="message"></p>
+  </div>
+
+  <script>
+const API_BASE = "https://polyhouse-qqiy.onrender.com";
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('message');
+
+  try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.verified) {
+      localStorage.setItem('token', data.token);
+      window.location.href = 'index.html';
+    } else if (res.status === 403) {
+      msg.textContent = "Your account is awaiting admin approval.";
+      msg.style.color = "orange";
+    } else {
+      msg.textContent = data.message || "Invalid credentials!";
+      msg.style.color = "red";
+    }
+
+  } catch (err) {
+    msg.textContent = "Server not reachable.";
+    msg.style.color = "red";
+  }
+});
+</script>
+
+</body>
+</html>

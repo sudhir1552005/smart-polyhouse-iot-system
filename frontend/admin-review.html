@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+  <title>Admin User Approval</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <title>User Approval</title>
+    <style>
+        body {
+            font-family: Poppins, sans-serif;
+            text-align: center;
+            background: #f5f7fa;
+            padding-top: 80px;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            width: 350px;
+            margin: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .approve {
+            background: #2ecc71;
+            color: white;
+        }
+        .reject {
+            background: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>User Approval</h2>
+    <p id="info">Loading...</p>
+
+    <button class="approve" onclick="action('approve')">Approve</button>
+    <button class="reject" onclick="action('reject')">Reject</button>
+
+    <p id="msg"></p>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const email = params.get("email");
+
+document.getElementById("info").innerText = `Approve user: ${email}`;
+
+function action(type) {
+    fetch(`/admin/${type}?email=${email}`)
+        .then(res => res.text())
+        .then(msg => document.getElementById("msg").innerText = msg)
+        .catch(() => alert("Action failed"));
+}
+</script>
+
+</body>
+</html>

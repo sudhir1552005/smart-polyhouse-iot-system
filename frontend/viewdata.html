@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>🌡️ Polyhouse Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="viewdata.css">
+
+</head>
+
+<body>
+
+<header>
+  <h1>🌡️ Polyhouse Temperature Controller</h1>
+  <button onclick="window.location.href='visualization.html'">📊 View Chart</button>
+</header>
+
+<main class="container">
+  <div class="sensor-grid">
+
+    <!-- RELAY 1 -->
+    <div class="sensor-card" data-sensor="relay1">
+      <h2>🔥Temperature Sensor</h2>
+
+      <div class="temp-display">
+        <span id="waterTemp">--</span> °C
+      </div>
+
+      <p>Status: <span class="status">--</span></p>
+
+      <div class="btn-group">
+        <button class="on-btn">ON</button>
+        <button class="off-btn">OFF</button>
+      </div>
+
+      <p>🕒 <span id="ts">--</span></p>
+    </div>
+
+    <!-- RELAY 2 -->
+    <div class="sensor-card" data-sensor="relay2">
+      <h2>🌀 Cooling Fan</h2>
+      <p>Status: <span class="status">--</span></p>
+
+      <div class="btn-group">
+        <button class="on-btn">ON</button>
+        <button class="off-btn">OFF</button>
+      </div>
+    </div>
+
+    <!-- RELAY 3 -->
+    <div class="sensor-card" data-sensor="relay3">
+      <h2>💦 Sprinkler</h2>
+      <p>Status: <span class="status">--</span></p>
+
+      <div class="btn-group">
+        <button class="on-btn">ON</button>
+        <button class="off-btn">OFF</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  © 2025 Centurion University | IoT Polyhouse Monitoring
+</footer>
+
+<script>
+const API_ROOT =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8080/sensors"
+    : "https://polyhouse-qqiy.onrender.com/sensors";
+
+async function loadLatest() {
+  try {
+    const res = await fetch(`${API_ROOT}/latest`);
+    if (!res.ok) return;
+    const d = await res.json();
+    document.getElementById("waterTemp").textContent = d.waterTemperature ?? "--";
+    document.getElementById("ts").textContent = d.timestamp ?? "--";
+  } catch {}
+}
+
+async function loadSensorState(sensor) {
+  try {
+    const res = await fetch(`${API_ROOT}/control/${sensor}`);
+    if (!res.ok) return;
+    const d = await res.json();
+    updateSensorStateUI(sensor, d.state);
+  } catch {}
+}
+
+function updateSensorStateUI(sensor, state) {
+  const card = document.querySelector(`.sensor-card[data-sensor="${sensor}"]`);
+  if (!card) return;
+
+  const onBtn = card.querySelector(".on-btn");
+  const offBtn = card.querySelector(".off-btn");
+  const status = card.querySelector(".status");
+
+  card.classList.toggle("on", state === "ON");
+  card.classList.toggle("off", state === "OFF");
+
+  onBtn.disabled = state === "ON";
+  offBtn.disabled = state === "OFF";
+
+  status.textContent = state;
+  status.style.color = state === "ON" ? "#00c853" : "#d32f2f";
+}
+
+async function controlSensor(sensor, state) {
+  const res = await fetch(`${API_ROOT}/control/${sensor}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ state })
+  });
+  if (res.ok) updateSensorStateUI(sensor, state);
+}
+
+document.querySelectorAll(".sensor-card").forEach(card => {
+  const sensor = card.dataset.sensor;
+  card.querySelector(".on-btn").onclick = () => controlSensor(sensor, "ON");
+  card.querySelector(".off-btn").onclick = () => controlSensor(sensor, "OFF");
+});
+
+loadLatest();
+["relay1", "relay2", "relay3"].forEach(loadSensorState);
+setInterval(loadLatest, 5000);
+setInterval(() => ["relay1","relay2","relay3"].forEach(loadSensorState), 7000);
+</script>
+
+</body>
+</html>
