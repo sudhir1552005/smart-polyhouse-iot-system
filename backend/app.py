@@ -74,7 +74,12 @@ def save_temp():
         if temperature is None:
             return jsonify({"error": "Temperature missing"}), 400
 
-        temperature = float(temperature)
+        # Make sure temperature is a float
+        try:
+            temperature = float(temperature)
+        except ValueError:
+            return jsonify({"error": "Invalid temperature format"}), 400
+
         now = datetime.now(timezone.utc)
 
         # Save temperature
@@ -83,7 +88,7 @@ def save_temp():
             "timestamp": now
         })
 
-        # Get relay configs
+        # Fetch relay configs
         relay2 = relay_collection.find_one({"device": "relay2"}) or {}
         relay3 = relay_collection.find_one({"device": "relay3"}) or {}
 
@@ -93,21 +98,25 @@ def save_temp():
         exhaust_state = relay2.get("state", "OFF")
         sprinkler_state = relay3.get("state", "OFF")
 
-        # 🔥 AUTO LOGIC (runs only if at least one relay is AUTO)
+        # 🔥 AUTO LOGIC
         if relay2_mode == "AUTO" or relay3_mode == "AUTO":
 
-            if temperature > 28:
+            if temperature >= 28:
                 exhaust_state = "ON"
                 sprinkler_state = "ON"
-
-            elif temperature > 25:
+            elif temperature >= 25:
                 exhaust_state = "ON"
                 sprinkler_state = "OFF"
-
             else:
                 exhaust_state = "OFF"
                 sprinkler_state = "OFF"
 
+            # Debug prints
+            print(f"[AUTO LOGIC] Temperature: {temperature}")
+            print(f"[AUTO LOGIC] Exhaust relay ({relay2_mode}): {exhaust_state}")
+            print(f"[AUTO LOGIC] Sprinkler relay ({relay3_mode}): {sprinkler_state}")
+
+            # Update relay2 if AUTO
             if relay2_mode == "AUTO":
                 relay_collection.update_one(
                     {"device": "relay2"},
@@ -118,6 +127,7 @@ def save_temp():
                     upsert=True
                 )
 
+            # Update relay3 if AUTO
             if relay3_mode == "AUTO":
                 relay_collection.update_one(
                     {"device": "relay3"},
@@ -128,18 +138,24 @@ def save_temp():
                     upsert=True
                 )
 
+        # Return relay states so IoT device can act immediately
         return jsonify({
             "message": "Temperature processed",
             "temperature": temperature,
-            "relay2": exhaust_state,
-            "relay3": sprinkler_state,
-            "relay2_mode": relay2_mode,
-            "relay3_mode": relay3_mode
+            "relay2": {
+                "state": exhaust_state,
+                "mode": relay2_mode
+            },
+            "relay3": {
+                "state": sprinkler_state,
+                "mode": relay3_mode
+            }
         }), 200
 
     except Exception as e:
-        print("❌ Error:", e)
+        print("❌ Error in /sensors/data:", e)
         return jsonify({"error": "Internal server error"}), 500
+
 
 # ================= SENSOR READ APIs =================
 @app.route('/sensors/data', methods=['GET'])
