@@ -8,6 +8,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="viewdata.css">
 
+  <style>
+    /* Optional quick styles for the mode button */
+    #modeToggleBtn {
+      padding: 8px 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+  </style>
 </head>
 
 <body>
@@ -15,6 +26,7 @@
 <header>
   <h1>🌡️ Polyhouse Temperature Controller</h1>
   <button onclick="window.location.href='visualization.html'">📊 View Chart</button>
+  <button id="modeToggleBtn">Mode: AUTO</button>
 </header>
 
 <main class="container">
@@ -73,6 +85,64 @@ const API_ROOT =
     ? "http://localhost:8080/sensors"
     : "https://polyhouse-qqiy.onrender.com/sensors";
 
+const MODE_API = API_ROOT.replace("/sensors","") + "/mode";
+let systemMode = "AUTO";
+
+// ===================== MODE FUNCTIONS =====================
+async function fetchMode() {
+  try {
+    const res = await fetch(MODE_API);
+    const data = await res.json();
+    systemMode = data.mode || "AUTO";
+    updateModeUI();
+  } catch (err) {
+    console.error("❌ Failed to fetch mode", err);
+  }
+}
+
+async function toggleMode() {
+  systemMode = systemMode === "AUTO" ? "MANUAL" : "AUTO";
+  try {
+    await fetch(MODE_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: systemMode })
+    });
+    updateModeUI();
+  } catch (err) {
+    alert("Failed to change mode");
+    console.error(err);
+  }
+}
+
+function updateModeUI() {
+  const btn = document.getElementById("modeToggleBtn");
+  if (!btn) return;
+
+  btn.innerText = `Mode: ${systemMode}`;
+  btn.style.background = systemMode === "AUTO" ? "#16a34a" : "#dc2626";
+  btn.style.color = "#fff";
+
+  // Disable ON/OFF buttons if AUTO
+  document.querySelectorAll(".sensor-card").forEach(card => {
+    const onBtn = card.querySelector(".on-btn");
+    const offBtn = card.querySelector(".off-btn");
+
+    if (card.dataset.sensor === "relay1") return; // Temp sensor stays readonly
+
+    if (systemMode === "AUTO") {
+      onBtn.disabled = true;
+      offBtn.disabled = true;
+    } else {
+      // Re-enable buttons according to relay state
+      const status = card.querySelector(".status").textContent;
+      onBtn.disabled = status === "ON";
+      offBtn.disabled = status === "OFF";
+    }
+  });
+}
+
+// ===================== SENSOR FUNCTIONS =====================
 async function loadLatest() {
   try {
     const res = await fetch(`${API_ROOT}/latest`);
@@ -103,33 +173,52 @@ function updateSensorStateUI(sensor, state) {
   card.classList.toggle("on", state === "ON");
   card.classList.toggle("off", state === "OFF");
 
-  onBtn.disabled = state === "ON";
-  offBtn.disabled = state === "OFF";
-
   status.textContent = state;
   status.style.color = state === "ON" ? "#00c853" : "#d32f2f";
+
+  // Enable/disable buttons based on mode
+  if (sensor !== "relay1") {
+    if (systemMode === "AUTO") {
+      onBtn.disabled = true;
+      offBtn.disabled = true;
+    } else {
+      onBtn.disabled = state === "ON";
+      offBtn.disabled = state === "OFF";
+    }
+  }
 }
 
 async function controlSensor(sensor, state) {
+  if (systemMode === "AUTO") {
+    alert("Switch to MANUAL mode to control relays!");
+    return;
+  }
+
   const res = await fetch(`${API_ROOT}/control/${sensor}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ state })
+    body: JSON.stringify({ state, mode: "MANUAL" })
   });
+
   if (res.ok) updateSensorStateUI(sensor, state);
 }
 
+// ===================== EVENT LISTENERS =====================
 document.querySelectorAll(".sensor-card").forEach(card => {
   const sensor = card.dataset.sensor;
   card.querySelector(".on-btn").onclick = () => controlSensor(sensor, "ON");
   card.querySelector(".off-btn").onclick = () => controlSensor(sensor, "OFF");
 });
 
+document.getElementById("modeToggleBtn")?.addEventListener("click", toggleMode);
+
+// ===================== INIT =====================
+fetchMode();
 loadLatest();
-["relay1", "relay2", "relay3"].forEach(loadSensorState);
+["relay1","relay2","relay3"].forEach(loadSensorState);
 setInterval(loadLatest, 5000);
 setInterval(() => ["relay1","relay2","relay3"].forEach(loadSensorState), 7000);
-</script>
 
+</script>
 </body>
 </html>

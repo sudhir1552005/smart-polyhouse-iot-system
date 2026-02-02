@@ -1,9 +1,16 @@
+// ================= API CONFIG =================
 // const API_ROOT =
 //   window.location.hostname === "localhost"
 //     ? "http://10.117.239.84:8080/sensors"
 //     : "https://polyhouse-060s.onrender.com/sensors";
-const API_ROOT = "https://polyhouse-060s.onrender.com/sensors";
 
+const API_ROOT = "https://polyhouse-060s.onrender.com/sensors";
+const MODE_API = "https://polyhouse-060s.onrender.com/mode";
+
+// ================= MODE STATE =================
+let systemMode = "AUTO";
+
+// ================= TABLE ELEMENTS =================
 const tbody = document.querySelector("#dataTable tbody");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
@@ -11,11 +18,51 @@ const pageInfo = document.getElementById("pageInfo");
 const pageSizeSelect = document.getElementById("pageSize");
 const searchBox = document.getElementById("searchBox");
 const viewDataBtn = document.getElementById("viewDataBtn");
+const modeToggleBtn = document.getElementById("modeToggleBtn");
 
 let allData = [];
 let page = 1;
 let size = parseInt(pageSizeSelect.value);
 
+// ================= MODE FUNCTIONS =================
+async function fetchMode() {
+  try {
+    const res = await fetch(MODE_API);
+    const data = await res.json();
+    systemMode = data.mode || "AUTO";
+    updateModeUI();
+  } catch (err) {
+    console.error("❌ Failed to fetch mode", err);
+  }
+}
+
+async function toggleMode() {
+  systemMode = systemMode === "AUTO" ? "MANUAL" : "AUTO";
+
+  try {
+    await fetch(MODE_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: systemMode })
+    });
+
+    updateModeUI();
+  } catch (err) {
+    alert("Failed to change mode");
+    console.error(err);
+  }
+}
+
+function updateModeUI() {
+  if (!modeToggleBtn) return;
+
+  modeToggleBtn.innerText = `Mode: ${systemMode}`;
+  modeToggleBtn.style.background =
+    systemMode === "AUTO" ? "#16a34a" : "#dc2626";
+  modeToggleBtn.style.color = "#fff";
+}
+
+// ================= DATA FETCH =================
 async function loadData() {
   try {
     const res = await fetch(`${API_ROOT}/data`);
@@ -32,13 +79,13 @@ async function loadData() {
   }
 }
 
+// ================= CSV EXPORT =================
 function exportToCSV() {
   if (!allData.length) {
     alert("No data available to export!");
     return;
   }
 
-  // Create CSV header
   const headers = ["S.No", "Temperature (°C)", "Timestamp"];
   const rows = allData.map((d, i) => [
     i + 1,
@@ -46,25 +93,25 @@ function exportToCSV() {
     d.timestamp ?? "-"
   ]);
 
-  // Combine headers and rows
   const csvContent = [headers, ...rows]
     .map(e => e.join(","))
     .join("\n");
 
-  // Create a blob and trigger download
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
+
   const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `polyhouse_data_${new Date().toISOString().slice(0,10)}.csv`);
+  link.href = url;
+  link.download = `polyhouse_data_${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
-// ===== PROFILE MENU & LOGOUT =====
 
-// Remove profile icon if not logged in
+// ================= PROFILE & LOGOUT =================
+const token = localStorage.getItem("token");
 const profileMenu = document.querySelector(".profile-menu");
+
 if (!token && profileMenu) {
   profileMenu.remove();
 }
@@ -74,19 +121,16 @@ const dropdown = document.getElementById("profileDropdown");
 const logoutBtn = document.getElementById("logoutBtn");
 
 if (profileIcon && dropdown && logoutBtn) {
-  // Toggle dropdown
   profileIcon.addEventListener("click", (e) => {
     e.stopPropagation();
     dropdown.classList.toggle("active");
   });
 
-  // Logout
   logoutBtn.addEventListener("click", () => {
     localStorage.removeItem("token");
     window.location.href = "login.html";
   });
 
-  // Close dropdown when clicking outside
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".profile-menu")) {
       dropdown.classList.remove("active");
@@ -94,6 +138,7 @@ if (profileIcon && dropdown && logoutBtn) {
   });
 }
 
+// ================= TABLE RENDER =================
 function renderTable() {
   size = parseInt(pageSizeSelect.value);
   const search = searchBox.value.trim().toLowerCase();
@@ -115,18 +160,19 @@ function renderTable() {
       (d, i) => `
       <tr>
         <td>${start + i + 1}</td>
-        <td>${d.waterTemperature ?? '-'}</td>
-        <td>${d.timestamp ?? '-'}</td>
+        <td>${d.waterTemperature ?? "-"}</td>
+        <td>${d.timestamp ?? "-"}</td>
       </tr>
     `
     )
-    .join('');
+    .join("");
 
   pageInfo.textContent = `Page ${page} of ${totalPages || 1} (${filtered.length} records)`;
   prevBtn.disabled = page <= 1;
   nextBtn.disabled = page >= totalPages;
 }
 
+// ================= EVENTS =================
 pageSizeSelect.addEventListener("change", () => {
   page = 1;
   renderTable();
@@ -149,7 +195,10 @@ nextBtn.addEventListener("click", () => {
   renderTable();
 });
 
-viewDataBtn.onclick = () => window.location.href = 'viewdata.html';
+viewDataBtn.onclick = () => window.location.href = "viewdata.html";
 document.getElementById("exportBtn").addEventListener("click", exportToCSV);
+modeToggleBtn?.addEventListener("click", toggleMode);
 
+// ================= INIT =================
+fetchMode();
 loadData();
