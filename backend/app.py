@@ -7,8 +7,7 @@ from email.mime.text import MIMEText
 import os
 from waitress import serve
 
-BASE_URL = os.getenv("BASE_URL", "https://polyhouse-qqiy.onrender.com")
-
+BASE_URL = os.getenv("BASE_URL", "https://polyhouse-060s.onrender.com")
 
 # ================= FLASK SETUP =================
 app = Flask(__name__, static_folder='../frontend', static_url_path='/')
@@ -22,6 +21,7 @@ MONGO_URI = os.getenv(
 
 client = MongoClient(MONGO_URI)
 db = client["sensors"]
+
 temp_collection = db["temperature_data"]
 relay_collection = db["relay_control"]
 users_collection = db["users"]
@@ -83,7 +83,7 @@ def save_temp():
             "timestamp": now
         })
 
-        # ================= AUTO / MANUAL LOGIC =================
+        # Get relay configs
         relay2 = relay_collection.find_one({"device": "relay2"}) or {}
         relay3 = relay_collection.find_one({"device": "relay3"}) or {}
 
@@ -93,7 +93,7 @@ def save_temp():
         exhaust_state = relay2.get("state", "OFF")
         sprinkler_state = relay3.get("state", "OFF")
 
-        # AUTO control only if mode = AUTO
+        # 🔥 AUTO LOGIC (runs only if at least one relay is AUTO)
         if relay2_mode == "AUTO" or relay3_mode == "AUTO":
 
             if temperature > 28:
@@ -132,19 +132,20 @@ def save_temp():
             "message": "Temperature processed",
             "temperature": temperature,
             "relay2": exhaust_state,
-            "relay3": sprinkler_state
+            "relay3": sprinkler_state,
+            "relay2_mode": relay2_mode,
+            "relay3_mode": relay3_mode
         }), 200
 
     except Exception as e:
         print("❌ Error:", e)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
-# ================= SENSOR APIs =================
+# ================= SENSOR READ APIs =================
 @app.route('/sensors/data', methods=['GET'])
 def get_all_temp():
     data = list(
-        temp_collection.find({}, {"_id": 0})
-        .sort("timestamp", -1)
+        temp_collection.find({}, {"_id": 0}).sort("timestamp", -1)
     )
 
     result = []
@@ -166,13 +167,16 @@ def latest_temp():
 
     return jsonify({
         "waterTemperature": d["temperature"],
-        "timestamp": d["timestamp"].astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+        "timestamp": d["timestamp"]
+            .astimezone(IST)
+            .strftime("%Y-%m-%d %H:%M:%S")
     })
 
 # ================= RELAY APIs ==================
 @app.route('/sensors/control/<device>', methods=['POST'])
 def set_relay(device):
     data = request.get_json(force=True)
+
     state = data.get("state", "").upper()
     mode = data.get("mode", "MANUAL").upper()
 
@@ -193,7 +197,8 @@ def set_relay(device):
     )
 
     return jsonify({
-        "message": f"{device} set to {state}",
+        "device": device,
+        "state": state,
         "mode": mode
     }), 200
 
@@ -212,9 +217,10 @@ def get_relay(device):
         "device": device,
         "state": r.get("state", "OFF"),
         "mode": r.get("mode", "AUTO"),
-        "timestamp": r["timestamp"].astimezone(IST).strftime("%Y-%m-%d %H:%M:%S")
+        "timestamp": r["timestamp"]
+            .astimezone(IST)
+            .strftime("%Y-%m-%d %H:%M:%S")
     })
-
 
 # ================= AUTH ========================
 @app.route('/signup', methods=['POST'])
@@ -243,7 +249,6 @@ def signup():
 
         review_link = f"{BASE_URL}/admin/review?email={email}"
 
-        # ✅ EMAIL SHOULD NEVER BREAK SIGNUP
         try:
             if SMTP_EMAIL and SMTP_PASSWORD:
                 send_email(
@@ -256,14 +261,12 @@ Name: {name}
 Email: {email}
 Signup Time: {created_time.astimezone(IST).strftime('%Y-%m-%d %H:%M:%S')}
 
-Review user (Approve / Reject):
+Review user:
 {review_link}
 """
                 )
-            else:
-                print("⚠️ SMTP not configured, skipping email")
-        except Exception as mail_err:
-            print("⚠️ Email failed, but signup continues:", mail_err)
+        except Exception as e:
+            print("⚠️ Email failed:", e)
 
         return jsonify({
             "message": "Signup successful. Await admin approval."
@@ -272,8 +275,6 @@ Review user (Approve / Reject):
     except Exception as e:
         print("❌ Signup error:", e)
         return jsonify({"message": "Internal server error"}), 500
-
-
 
 @app.route('/admin/review')
 def review_page():
@@ -309,7 +310,6 @@ def reject():
     send_email(email, "Account Rejected", "Your signup request was rejected.")
     return "❌ User rejected"
 
-
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json(force=True)
@@ -321,9 +321,7 @@ def login():
     if not user or user.get("password") != password:
         return jsonify({"message": "Invalid credentials"}), 401
 
-    status = user.get("status", "PENDING")  # 🔥 SAFE ACCESS
-
-    if status != "APPROVED":
+    if user.get("status") != "APPROVED":
         return jsonify({
             "verified": False,
             "message": "Your account is awaiting admin approval."
@@ -333,7 +331,6 @@ def login():
         "verified": True,
         "token": "dummy-token"
     }), 200
-
 
 # ================= RUN =========================
 if __name__ == "__main__":

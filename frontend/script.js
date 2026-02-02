@@ -1,8 +1,8 @@
 // const API_ROOT =
 //   window.location.hostname === "localhost"
 //     ? "http://10.117.239.84:8080/sensors"
-//     : "https://polyhouse-qqiy.onrender.com/sensors";
-const API_ROOT = "https://polyhouse-qqiy.onrender.com/sensors";
+//     : "https://polyhouse-060s.onrender.com/sensors";
+const API_ROOT = "https://polyhouse-060s.onrender.com/sensors";
 
 const tbody = document.querySelector("#dataTable tbody");
 const prevBtn = document.getElementById("prevBtn");
